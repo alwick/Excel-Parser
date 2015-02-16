@@ -19,10 +19,14 @@ class Processor {
 
     public Processor() {}
 
-    public void convert(String rootDirectory, String resultsFilename, String startDate, String replacementFile ) {
+    public void convert(String rootDirectory, String resultsFilename, String startDate, String replacementFilename ) {
+        def replacementsFile = new File( replacementFilename );
+        replacementsFile.mkdirs();
+
         def replacements = new FileReplacementMap();
-        replacements.parseFile( replacementFile );
-        def factory = new WorkbookAnalysisFactory(map:replacements);
+        replacements.parseFile( replacementFilename );
+        def factory = new WorkbookAnalysisFactory(map:replacements, outputDirectory: replacementsFile.getPath() );
+
         def results = factory.buildForDirectory( new File( rootDirectory ), DateTime.parse( startDate ) );
         new ResultsExport().writeResults( new File( resultsFilename ), results );
     }

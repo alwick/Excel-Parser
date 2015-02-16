@@ -43,6 +43,7 @@ class WorkbookAnalysisFactory {
         parseSubdirectories(results, parser, directory);
 
         System.gc();
+        System.out.println( "Done with: " + directory.getPath() );
 
         return results;
     }
@@ -93,6 +94,7 @@ class WorkbookAnalysisFactory {
             def separatorIndex = filename.lastIndexOf('.');
             def newFilename = outputDirectory + File.separator + filename.substring( 0, separatorIndex ) + '_new' + filename.substring( separatorIndex );
             workbook.write( new FileOutputStream( newFilename ) );
+            System.out.println( "Saved updated file: " + newFilename );
         }
 
         analysis.setName( file.getName() );
