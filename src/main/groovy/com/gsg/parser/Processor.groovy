@@ -13,11 +13,15 @@ class Processor {
             p.convert(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4] );
         }
         else {
-            p.convert(inputs[0], inputs[1], inputs[2], null );
+            p.convert(inputs[0], inputs[1], inputs[2] );
         }
     }
 
     public Processor() {}
+
+    public void convert(String rootDirectory, String resultsFilename, String startDate ) {
+        convert( rootDirectory, resultsFilename, startDate, null, "" );
+    }
 
     public void convert(String rootDirectory, String resultsFilename, String startDate, String replacementFilename, String outputDirectoryName ) {
         def outputDirectory = new File( outputDirectoryName );

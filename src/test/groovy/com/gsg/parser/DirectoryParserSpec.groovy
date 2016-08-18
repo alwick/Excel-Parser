@@ -14,6 +14,6 @@ class DirectoryParserSpec extends Specification {
 
         expect:
         files;
-        files.size() == 2;
+        files.size() == 4;
     }
 }

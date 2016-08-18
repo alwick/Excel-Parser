@@ -19,7 +19,7 @@ class WorkbookAnalysisFactorySpec extends Specification {
 
         then:
         results;
-        results.size() == 3;
+        results.size() == 4;
         results[0].linkedFiles.size() == 0;
         results[1].linkedFiles.size() == 0;
         results[2].linkedFiles.size() == 1;
@@ -27,7 +27,7 @@ class WorkbookAnalysisFactorySpec extends Specification {
 
     def 'Replace links'() {
         when:
-        def output = new File('src/test/output');
+        def output = new File('src/test/resources');
         output.mkdirs();
 
         and:
@@ -41,12 +41,12 @@ class WorkbookAnalysisFactorySpec extends Specification {
 
         then:
         results;
-        results.size() == 3;
+        results.size() == 4;
         results[0].linkedFiles.size() == 0;
         results[1].linkedFiles.size() == 0;
         results[2].linkedFiles.size() == 1;
 
-        output.listFiles().size() == 1;
+        output.listFiles().size() == 7;
     }
 
     @Ignore

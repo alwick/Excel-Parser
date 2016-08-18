@@ -90,9 +90,11 @@ class WorkbookAnalysisFactory {
         }
 
         if( updated ) {
-            def filename = file.getName();
+            //def filename = file.getName();
+            def filename = file.getPath();
             def separatorIndex = filename.lastIndexOf('.');
-            def newFilename = outputDirectory + File.separator + filename.substring( 0, separatorIndex ) + '_new' + filename.substring( separatorIndex );
+            //def newFilename = filename.substring( 0, separatorIndex) + File.separator + filename.substring( 0, separatorIndex ) + '_new' + filename.substring( separatorIndex );
+            def newFilename = filename.substring( 0, separatorIndex ) + '_new' + filename.substring( separatorIndex );
             workbook.write( new FileOutputStream( newFilename ) );
             System.out.println( "Saved updated file: " + newFilename );
         }

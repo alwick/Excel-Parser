@@ -17,10 +17,10 @@ class ProcessorSpec extends Specification {
         1 == 1
     }
 
-    //@Ignore
+    @Ignore
     def 'Test run with replacements'() {
         when:
-        new Processor().convert( "z:/ACCT", "2015-01-19-acct.csv", "2011-01-01", "2015-01-19-acct-input.csv" );
+        new Processor().convert( "z:/ACCT", "2015-01-19-acct.csv", "2011-01-01", "2015-01-19-acct-input.csv", "" );
 
         then:
         1 == 1
