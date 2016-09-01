@@ -80,10 +80,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.4</version>
                 <configuration>
-                    <!--<excludes>-->
-                        <!--<exclude>**/models/**</exclude>-->
-                        <!--<exclude>**/parsers/**</exclude>-->
-                    <!--</excludes>-->
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.qsg.parser.Processor</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
             <plugin>

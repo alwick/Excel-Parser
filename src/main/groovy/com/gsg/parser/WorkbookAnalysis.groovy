@@ -7,6 +7,7 @@ class WorkbookAnalysis {
     String name;
     String path;
     List<String> linkedFiles;
+    List<String> urlLinkFiles;
 
     String getName() {
         return name
@@ -30,5 +31,13 @@ class WorkbookAnalysis {
 
     void setLinkedFiles(List<String> linkedFiles) {
         this.linkedFiles = linkedFiles
+    }
+
+    List<String> getUrlLinkFiles() {
+        return urlLinkFiles
+    }
+
+    void setUrlLinkFiles(List<String> urlLinkFiles) {
+        this.urlLinkFiles = urlLinkFiles
     }
 }

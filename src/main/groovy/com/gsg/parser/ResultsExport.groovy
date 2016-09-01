@@ -5,12 +5,21 @@ package com.gsg.parser
  */
 class ResultsExport {
 
-    def writeResults( File file, List<WorkbookAnalysis> results ) {
+    def writeResults( File file, results ) {
         FileWriter output = new FileWriter(file);
         BufferedWriter writer = new BufferedWriter(output);
 
-        for (WorkbookAnalysis analysis : results) {
-            for (String link : analysis.linkedFiles) {
+        results.each { analysis ->
+            analysis.linkedFiles.each { link ->
+                writer.write(analysis.path);
+                writer.write(",");
+                writer.write(analysis.name);
+                writer.write(",");
+                writer.write(link);
+                writer.newLine();
+            }
+
+            analysis.urlLinkFiles.each { link ->
                 writer.write(analysis.path);
                 writer.write(",");
                 writer.write(analysis.name);

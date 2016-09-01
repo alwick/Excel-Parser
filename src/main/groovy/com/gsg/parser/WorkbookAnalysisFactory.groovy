@@ -1,8 +1,6 @@
 package com.gsg.parser
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
-import org.apache.poi.openxml4j.opc.PackagePart
-import org.apache.poi.xssf.model.ExternalLinksTable
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.joda.time.DateTime
 
@@ -12,51 +10,86 @@ import org.joda.time.DateTime
 class WorkbookAnalysisFactory {
     def FileReplacementMap map;
     def String outputDirectory;
+    def ResultsExport export;
+    def File processedDirectories;
+    def File largeFiles;
 
     def List<WorkbookAnalysis> buildForDirectory( File directory ) {
         buildForDirectory( directory, new DirectoryParser() );
     }
 
-    def List<WorkbookAnalysis> buildForDirectory( File directory, DateTime lastModifiedDate ) {
-        def results = [];
+    def buildForDirectory( File directory, DateTime lastModifiedDate, resultsPrefix ) {
         def parser = new DirectoryParser( asOfDate: lastModifiedDate );
-        results.addAll( buildForDirectory( directory, parser ) );
+        def ignoreDirectories = processedDirectories.exists() ? processedDirectories.readLines() : [];
 
-        return results;
-    }
+        def rootResults = parseDirectoryFiles(parser, directory.getPath());
+        writeResults(rootResults, directory,resultsPrefix);
 
-    def List<WorkbookAnalysis> buildForDirectory( File directory, parser ) {
-        System.out.println( "Analyzing Directory: " + directory.getPath() );
-
-        def results = [];
-        def files = parser.getExcelFiles(directory.getPath());
-        for (File file : files) {
-            try {
-                results.add(analyzeFile(file));
-            }
-            catch (Exception e ) {
-                System.out.println( "Error parsing workbook: " + file.getPath() );
-                e.printStackTrace();
+        parser.getDirectories( directory ).each { rootDirectory ->
+            if( !ignoreDirectories.contains( rootDirectory.getPath() ) ) {
+                def results = buildForDirectory(rootDirectory, parser);
+                writeResults(results, rootDirectory, resultsPrefix);
+                processedDirectories.append('\n' + rootDirectory.getPath());
             }
         }
+    }
 
+    protected writeResults(List results, File rootDirectory, resultsPrefix) {
+        if (results.size() > 0) {
+            def filename = resultsPrefix + '-' + rootDirectory.getPath().split("\\\\").last() + '.csv';
+            export.writeResults(new File(filename), results);
+            System.out.println("Wrote results to: " + filename);
+        } else {
+            System.out.println("No results to write...");
+        }
+    }
+
+    def buildForDirectory( File directory, parser ) {
+        def directoryPath = directory.getPath();
+        System.out.println( "Analyzing Directory: " + directoryPath );
+
+        ArrayList results = parseDirectoryFiles(parser, directoryPath);
         parseSubdirectories(results, parser, directory);
 
         System.gc();
-        System.out.println( "Done with: " + directory.getPath() );
+        System.out.println( "Done with: " + directoryPath + " found: " + results.size() + " files with link(s)" );
 
         return results;
     }
 
-    def parseSubdirectories( List<WorkbookAnalysis> results, DirectoryParser parser, File directory ) {
-        def directories = parser.getDirectories( directory );
+    protected parseDirectoryFiles(parser, String directoryPath) {
+        def results = [];
+        parser.getExcelFiles(directoryPath).each { file ->
+            def fileSizeInMB = file.length() / 1024 / 1024;
+            if( fileSizeInMB > 20 ) {
+                System.out.println(file.getPath() + " is too large to process: " + fileSizeInMB + "mb");
+                largeFiles.append( file.getPath() );
+            }
+            else {
+                try {
+                    def analysis = analyzeFile(file);
 
-        for( File subDirectory : directories ) {
+                    System.out.println(file.getPath() + " - Linked files: " + analysis.linkedFiles.size() + " - URL Links: " + analysis.urlLinkFiles.size());
+                    if (analysis.linkedFiles.size() > 0 || analysis.urlLinkFiles.size() > 0) {
+                        results.add(analysis);
+                    }
+                }
+                catch (Exception e) {
+                    System.out.println("Error parsing workbook: " + file.getPath());
+                    e.printStackTrace();
+                }
+            }
+        }
+        results
+    }
+
+    def parseSubdirectories( results, DirectoryParser parser, File directory ) {
+        parser.getDirectories( directory ).each { subDirectory ->
             results.addAll( buildForDirectory(subDirectory, parser) );
         }
     }
 
-    def analyzeFile( File file ) {
+    def WorkbookAnalysis analyzeFile( File file ) {
         System.out.println( "Analysing file: " + file.getName() );
 
         def updates = null;
@@ -65,28 +98,42 @@ class WorkbookAnalysisFactory {
             if( updates != null ) {
                 System.out.println( "Found replacements" );
             }
-
         };
 
         WorkbookAnalysis analysis = new WorkbookAnalysis();
         FileInputStream fs = new FileInputStream( file );
-        XSSFWorkbook workbook = new XSSFWorkbook( fs );
+        def isHSSF = file.getName().tokenize('.').last().equals("xls");
+        def workbook = isHSSF ? new HSSFWorkbook(fs) : new XSSFWorkbook( fs );
 
         def linkedFiles = [];
-        def tables = workbook.getExternalLinksTable();
         def updated = false;
-        for( ExternalLinksTable table : tables ) {
-            def link = table.getLinkedFileName();
-            if( updates != null ) {
-                def replacement = updates.get( link );
-                if( replacement != null ) {
-                    table.setLinkedFileName( replacement );
-                    updated = true;
-                    System.out.println( "Replaced: " + link + " with: " + replacement );
+        if ( !isHSSF ) {
+            def tables = workbook.getExternalLinksTable();
+            tables.each { table ->
+                def link = table.getLinkedFileName();
+                if (updates != null) {
+                    def replacement = updates.get(link);
+                    if (replacement != null) {
+                        table.setLinkedFileName(replacement);
+                        updated = true;
+                        System.out.println("Replaced: " + link + " with: " + replacement);
+                    }
+                }
+
+                linkedFiles.add(link);
+            }
+        }
+
+        // look for url links...
+        def urlLinks = [];
+        for (def sheet : workbook ) {
+            for (def row : sheet) {
+                for (def cell : row) {
+                    if( cell.getHyperlink() != null ) {
+                        urlLinks.add( cell.getHyperlink().getAddress() );
+                    }
                 }
             }
-
-            linkedFiles.add( link );
         }
 
         if( updated ) {
@@ -102,6 +149,7 @@ class WorkbookAnalysisFactory {
         analysis.setName( file.getName() );
         analysis.setPath( file.getParent() );
         analysis.setLinkedFiles( linkedFiles );
+        analysis.setUrlLinkFiles( urlLinks );
 
         return analysis;
     }

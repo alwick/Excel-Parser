@@ -10,7 +10,7 @@ class DirectoryParser {
 
     def List<File> getExcelFiles( String directory ) {
         File f = new File(directory);
-        return f.listFiles( new ExtensionsFilter( [ ".xlsx" ] ) );
+        return f.listFiles( new ExtensionsFilter( [ ".xls", ".xlsx" ] ) );
     }
 
     def List<File> getFiles( String directory ) {
